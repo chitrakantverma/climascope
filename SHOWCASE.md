@@ -1,58 +1,38 @@
-# ClimaScope showcase package
+# ClimaScope notes
 
-Status: prepared from the actual project and a real NCEP tutorial subset on 25 October 2026. This is maintenance of a repository first committed on 15 March 2026.
+Original repository: 15 March 2026. Current maintenance: 25 October 2026. History is preserved.
 
-## Run the demo
+## Quick walkthrough
 
-```sh
-python -m pip install -r requirements.txt
-streamlit run app.py
-```
+Run `streamlit run app.py` after installing `requirements.txt`. The sample loads automatically.
 
-The regional NCEP monthly sample loads automatically. Start with Map View, switch to Globe View, choose two time slices and press Compare, then generate the temporal animation. Change the sidebar coordinates and press Locate on Map to inspect a local time trend. The image/video evidence below is captured from the local app, not a claim about the public cloud deployment.
+1. Inspect the heatmap. Its axes are longitude and latitude; the colours represent the selected variable's values.
+2. Change the date in the sidebar and click **Update date**.
+3. Change latitude/longitude and click **Update location**. The marker and trend use the nearest dataset grid cell.
+4. Open **Compare two dates**, choose dates and click **Compare**. The result is the second slice minus the first.
 
-Public cloud: the existing URL is listed in the README. Its current source/version must be checked before sharing it as the updated build.
+## Explain the project
 
-## What to explain in an interview
+The app helps inspect a NetCDF file without writing selection and plotting code each time. Xarray opens the file and selects data by labelled coordinates. NumPy/Xarray calculate the summary, Plotly builds charts, and Streamlit provides the controls.
 
-**Problem:** NetCDF data is difficult to inspect without writing analysis code. The dashboard lets a user select a variable, location and time and inspect spatial patterns and temporal differences.
+The area-weighted mean uses cosine-latitude weights because regular latitude/longitude cells get smaller near the poles. The supplied sample is regional. A difference between two dates is not evidence of long-term climate change.
 
-**Flow:** Xarray decodes labelled dimensions and units. The loader loads the data and closes the file handle. The sidebar stores the selected dataset, time and location. NumPy/Xarray compute summaries, SciPy interpolates/smooths map displays, and Plotly renders the figures through Streamlit.
+This version deliberately uses a plain interface and original data values. The old globe, animation, smoothing and duplicate charts added complexity without helping the main task. They are available in repository history.
 
-**Why area weights?** Equal latitude/longitude cells cover less physical area near the poles. Cosine-latitude weights approximate those areas on a regular grid. The summary is over the supplied region and uses equal weight per time step. It is not a universal global mean estimator.
+Before an interview, run the app yourself and trace the selection, conversion and plotting steps. Be able to explain any AI-assisted code you use; the appearance of the interface does not establish how the code was written.
 
-**Why two means differ:** The raw four-daily source yields about 12.3598°C. The bundled monthly means yield about 12.3206°C when every month is weighted equally. That difference comes from temporal aggregation and unequal month lengths.
+## Case-study draft
 
-**Bugs discovered during actual validation:** Default Streamlit hashing rejected the Xarray input; NOAA's `degK` alias was missed; subdaily timestamps were truncated; extrema dates could misalign after sorting; dataset switches retained stale location/time state. The current fixes and tests target those failures.
+I revisited ClimaScope, a climate-data viewer first uploaded in March 2026.
 
-**Limits:** This is an exploratory visualization tool. Smoothing is for display. Comparing two dates does not establish long-term climate change. It does not forecast. Irregular/curvilinear grids, non-standard calendars and additional file backends need more work.
+The current version focuses on four things: a heatmap, dataset statistics, a location trend and a comparison between two dates. The interface uses standard Streamlit controls, and charts show original values without smoothing.
 
-Before an interview, run the demo yourself and explain the above flow from the source. Verification done by this maintenance session should not be presented as your personal testing until you have repeated it.
+The maintenance also fixes unit conversions, timestamp labels and stale selections when switching datasets. A real regional NCEP sample is bundled with source attribution and reproducible preparation steps. Thirteen test methods cover the calculations, charts and controls.
 
-## LinkedIn case study — draft, not published
-
-ClimaScope now opens with a real NCEP climate sample instead of an empty upload screen.
-
-The project was first uploaded in March 2026. This update focused on checking what happens when real data goes through it.
-
-That exposed a few useful problems: the dataset could not pass through the summary cache, `degK` metadata was not being converted to Celsius, and six-hourly readings were displayed with date-only labels.
-
-The updated version has a documented monthly sample, area-weighted regional summaries, consistent units and tests covering the data and Streamlit controls. Thirteen test methods pass.
-
-One result needs context: the sample covers a region, so its average should never be described as a global temperature. A difference between two dates also says very little about long-term climate change.
+The next step is connecting the hosted app to this version. The current public URL still points to a separate repository.
 
 Repository: https://github.com/chitrakantverma/climascope
 
-## Evidence
+## Browser evidence
 
-Browser captures and the demo walkthrough are recorded below after UI verification.
-
-
-### Local browser capture — 25 October 2026
-
-The bundled real dataset loads successfully. Map view and the regional scope label are visible below.
-
-<img width="1280" height="720" alt="clipboard" src="https://github.com/user-attachments/assets/79219b02-9013-49d7-ace0-d21adbae65a7" />
-
-
-Public deployment check (25 October 2026): the existing Streamlit URL still displays the older “Global Climate Data Explorer” screen with no dataset loaded. The updated cloud build is not verified. Screen recording was not completed because the recording interface failed; the screenshot above is the available browser evidence.
+Screenshots below are from the local app. The public Streamlit URL uses `supremeacc/finalclimax`; it has not been updated by these commits. No screen recording has been completed.

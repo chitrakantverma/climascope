@@ -1,23 +1,20 @@
 # ClimaScope
 
-Explore NetCDF climate datasets through maps, location time series, period comparisons and a 3D globe. Built with Python, Streamlit, Xarray and Plotly.
+A small Python dashboard for exploring climate data stored in NetCDF files. Built with Streamlit, Xarray, NumPy and Plotly.
 
-[Existing deployment](https://finalclimax-teygrdtzta6rrlgtm7sul7.streamlit.app/) · [Commit history](https://github.com/chitrakantverma/climascope/commits/main/)
+## What it does
 
-## Project history
+- Loads a bundled air-temperature sample or an uploaded `.nc` file.
+- Shows a latitude/longitude heatmap for one date.
+- Lists the dataset mean, minimum, maximum and largest change between time steps.
+- Plots values over time at the nearest grid cell to a selected location.
+- Subtracts one date from another to show a difference heatmap.
 
-The repository was first committed on **15 March 2026**. The **25 October 2026** maintenance pass preserves the original history and improves numerical summaries and documentation. This repository is evidence of a 2026 project, not a 2025 project.
+The interface uses standard Streamlit controls. Charts show the original grid values and observations without interpolation, smoothing or automatic resampling. Globe views, animation and repeated insight panels have been removed from the current dashboard to keep the project small.
 
-## Features
+## Run locally
 
-- Load a NetCDF `.nc` dataset with one-dimensional latitude/longitude coordinates.
-- Explore map/globe views, local time trends, period differences and temporal animation.
-- Inspect variable-aware units and visual scales.
-- Summarize extrema and the signed step change with the largest magnitude.
-
-## Run
-
-Use Python 3.11 in a virtual environment:
+Use Python 3.11:
 
 ```sh
 python -m venv .venv
@@ -26,69 +23,56 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-A real NCEP-derived monthly sample loads automatically from `data/`. Upload a `.nc` file through the sidebar or place additional files under `data/`. The core runtime supports classic NetCDF through SciPy; install `requirements-netcdf4.txt` for the optional compressed NetCDF4 backend. The local app normally opens at `http://localhost:8501`; the hosted URL above is a separate deployment and may sleep after inactivity.
+The sample loads automatically. Change a sidebar value, then click **Update location** or **Update date**. Open **Compare two dates** for the difference chart.
 
-## Data and numerical scope
+Classic NetCDF files work through SciPy. For the optional NetCDF4 backend, install `requirements-netcdf4.txt`; that backend has not been tested here.
 
-Supported coordinate names are `lat`/`latitude`, `lon`/`longitude`, and optional `time`. Summary statistics require evenly spaced rectilinear latitude/longitude grids and a single variable with no unresolved level, ensemble or other extra dimensions. Unsupported grids return an error instead of a misleading average.
+## How the code fits together
 
-The dataset mean uses cosine-latitude area weights and ignores missing values. Each time step receives equal weight; irregular sampling is **not** duration-weighted. The result describes the supplied geographic extent. A regional dataset is not a global climate estimate. Extrema refer to original valid observations. Step changes use chronologically sorted timestamps; duplicate timestamps are rejected.
-
-Temperature, pressure and precipitation conversions depend on dataset metadata. A smoothed difference map is a visualization, not statistical proof of climate change. Curvilinear grids and exact cell-boundary area integration remain out of scope.
-
-## Architecture
-
-| Location | Responsibility |
+| File | Job |
 | --- | --- |
-| `app.py` | Dashboard composition and navigation |
-| `components/` | Sidebar, maps, trends, comparison and summary views |
-| `modules/data_loader.py` | Dataset loading and coordinate selection |
-| `modules/variable_adapter.py` | Units and visual conventions |
-| `modules/analysis.py` | Dataset summary and time-step comparisons |
-| `modules/grid_math.py` | Validated latitude weights |
-| `modules/visualizations.py` | Plotly map, globe and animation construction |
+| `app.py` | Calls the sidebar and the four dashboard sections |
+| `components/sidebar.py` | Loads files and reads the selected variable, location and date |
+| `components/` | Displays the charts and summary |
+| `modules/data_loader.py` | Opens files and selects coordinates |
+| `modules/visualizations.py` | Builds the three chart types |
+| `modules/variable_adapter.py` | Reads units and converts Kelvin to Celsius or Pa to hPa |
+| `modules/analysis.py` | Calculates statistics |
+| `modules/grid_math.py` | Checks the grid and calculates latitude weights |
 
-## Checks
+To understand the project, start with `app.py`, follow `generate_heatmap`, then trace `get_spatial_slice` back to the selected date. The location chart uses Xarray's `sel(..., method="nearest")`. The comparison subtracts corresponding cells in two arrays. Streamlit reruns the script after an interaction; session state keeps loaded datasets and the committed selections.
 
-```sh
-python -m unittest test_grid_math.py
-python -m unittest discover -s tests -v
-python -m compileall -q app.py components modules utils scripts
-```
+## One calculation to understand
 
-**13 test methods passed:** five latitude-weight helper tests and eight runtime/integration tests. The latter load the real bundled sample, compare the weighted mean with an independent NumPy calculation, exercise five chart-generation paths and run Streamlit AppTest through map/globe, comparison, animation and dataset switching. Python syntax checks passed. See `VALIDATION.json` for versions, numbers and limits.
+Latitude/longitude cells represent less area near the poles. The mean therefore uses `cos(latitude)` weights on a regular grid. Xarray applies the weights across latitude and longitude, then averages the time steps equally. This is a regional dataset average. It is not a global temperature estimate, and irregular time spacing is not duration-weighted.
 
-These tests cover the documented sample and controlled edge cases. They do not establish correctness for every climate convention, and the optional NetCDF4 backend was not tested. The local browser demo was run separately; public cloud status is recorded in `SHOWCASE.md`.
+## Sample data
 
-## Maintenance changes
+The bundled file has 24 monthly means from 2013–2014, covering **15–75°N, 200–330°E**. It comes from the real NCEP tutorial subset maintained by [pydata/xarray-data](https://github.com/pydata/xarray-data). Data attribution: NCEP-NCAR Reanalysis 1, NOAA PSL, Boulder, Colorado, USA.
 
-- Replaced the unweighted dataset/spatial means with cosine-latitude weighting for regular grids.
-- Labelled regional summaries as dataset statistics rather than global averages.
-- Added regular-grid, extra-dimension and duplicate-timestamp checks.
-- Made extrema ignore missing observations and sorted time before step comparison.
-- Removed dataset-identity caches. Xarray datasets are not passed to Streamlit's default argument hasher; results are recomputed from the selected data.
-- Recognized NOAA `degK` metadata and displayed summary values in consistent units.
-- Kept full subdaily timestamps and correct extrema dates after time sorting.
-- Closed loaded dataset handles, removed temporary uploads, and distinguished same-name files by content digest.
-- Reset location/time state when switching datasets.
-- Added a real, attributed bundled sample, integration tests and ignore rules for generated Python files.
+Its weighted mean is about **12.3206°C**. Each month receives equal weight, so this differs from averaging all four-daily source observations. Source links, processing notes and file hashes are in `data/provenance.json`.
 
-Previously committed `__pycache__` files remain in history. Ignore rules prevent newly generated bytecode from being added; they do not remove already tracked files.
-
-## Next improvements
-
-Add cell-boundary weighting for irregular grids, improve large-file memory use and test additional climate calendars and file backends. Forecasting and predictive modelling are not implemented.
-
-## Reproducible sample
-
-`data/ncep_air_monthly_2013_2014.nc` contains 24 monthly means derived from the 2,920 four-daily NCEP observations in Xarray's `air_temperature.nc`. Coverage is **15–75°N, 200–330°E**, a regional subset. The bundled dataset mean is approximately **12.3206°C** with equal weight per month; this differs from averaging the full four-daily source because months have different lengths.
-
-Source and SHA-256 hashes are in `data/provenance.json`. To reproduce the sample from the downloaded source file:
+To rebuild it from the original downloaded `air_temperature.nc`:
 
 ```sh
 python scripts/prepare_demo.py /path/to/air_temperature.nc
 ```
 
-NCEP-NCAR Reanalysis 1 data provided by NOAA PSL, Boulder, Colorado, USA; tutorial subset maintained by [pydata/xarray-data](https://github.com/pydata/xarray-data). [Xarray's dataset documentation](https://tutorial.xarray.dev/fundamentals/01_datastructures.html).
+## Checks and limits
 
-See [SHOWCASE.md](SHOWCASE.md) for the walkthrough, interview explanation and draft case study.
+```sh
+python -m unittest test_grid_math.py
+python -m unittest discover -s tests -v
+```
+
+The 13 test methods cover weighting, units, missing values, timestamps, original chart values, comparison and dataset switching. Runtime versions and results are recorded in `VALIDATION.json`.
+
+Supported data has one-dimensional `lat`/`latitude` and `lon`/`longitude` coordinates, with optional `time`. Select a single level or ensemble member before uploading. Summary statistics require evenly spaced grids. Large files load into memory. Non-standard calendars and curvilinear grids need more work. This app does not predict weather; a two-date comparison does not establish long-term climate change.
+
+## History and demo status
+
+The original repository was first committed on **15 March 2026**. Fixes and this simpler interface were added on **25 October 2026**, keeping the original history. Older globe/animation versions can be found in that history.
+
+The [existing hosted app](https://finalclimax-teygrdtzta6rrlgtm7sul7.streamlit.app/) uses the separate `supremeacc/finalclimax` repository. It is not a verified deployment of this repository's current code. Use the local instructions above until deployment is connected to this source.
+
+[Showcase notes and screenshot](SHOWCASE.md).

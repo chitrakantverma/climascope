@@ -31,16 +31,15 @@
     "unsorted time extrema",
     "subdaily timestamps",
     "Kelvin aliases",
-    "five chart generation paths",
+    "three charts preserve original cells and observations",
     "Streamlit default view",
-    "globe control",
     "comparison control",
-    "animation control",
     "dataset switch bounds/time reset"
   ],
   "limits": [
     "sample validation does not cover every NetCDF convention",
     "NetCDF4 backend optional and not tested here",
     "public cloud deployment verification recorded separately"
-  ]
+  ],
+  "interface": "Standard Streamlit dashboard: heatmap, summary, location trend and optional two-date comparison"
 }
