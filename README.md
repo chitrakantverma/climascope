@@ -1,123 +1,73 @@
 # ClimaScope
 
-**Global Climate Data Explorer**
+Explore NetCDF climate datasets through maps, location time series, period comparisons and a 3D globe. Built with Python, Streamlit, Xarray and Plotly.
 
-ClimaScope is an interactive dashboard for exploring NetCDF climate datasets. Upload any `.nc` file and instantly visualize spatial distributions, temporal trends, and climate anomalies — no coding required.
+[Existing deployment](https://finalclimax-teygrdtzta6rrlgtm7sul7.streamlit.app/) · [Commit history](https://github.com/chitrakantverma/climascope/commits/main/)
 
----
+## Project history
+
+The repository was first committed on **15 March 2026**. The **25 October 2026** maintenance pass preserves the original history and improves numerical summaries and documentation. This repository is evidence of a 2026 project, not a 2025 project.
 
 ## Features
 
-### Global Climate Map
-Spatial heatmap of any climate variable rendered on a Natural Earth projection with coastlines, country borders, and smooth color interpolation. Supports two visualization modes:
-- **Map View** — flat geographic heatmap with click-to-select location
-- **Globe View** — interactive 3D orthographic globe with dense interpolated rendering and Turbo colorscale
+- Load a NetCDF `.nc` dataset with one-dimensional latitude/longitude coordinates.
+- Explore map/globe views, local time trends, period differences and temporal animation.
+- Inspect variable-aware units and visual scales.
+- Summarize extrema and the signed step change with the largest magnitude.
 
-### Location Time Trend
-Time-series analysis at any geographic point. Select a location by clicking the map or entering coordinates in the sidebar. Includes automatic resampling and trend smoothing.
+## Run
 
-### Climate Change Comparison
-Side-by-side comparison of two time periods with a Gaussian-smoothed difference map. Red indicates increase, blue indicates decrease.
+Use Python 3.11 or newer in a virtual environment:
 
-### Summary Statistics
-Global summary metrics computed from the full dataset:
-- Global average, maximum, and minimum values with locations
-- Largest step change between consecutive time steps
-
-### Climate Insights
-Three analysis views consolidated into expandable sections:
-- **Global Snapshot** — baseline spatial distribution at the earliest time step
-- **Climate Change Comparison** — anomaly map between earliest and latest time steps
-- **Time Trend** — temporal evolution at the selected location
-
-### Temporal Animation
-Animated playback of the dataset across the full time dimension with consistent color scaling across frames.
-
-### Adaptive Dataset Handling
-Automatically detects variable types and units from metadata, applies conversions (K → °C, Pa → hPa), and selects appropriate color scales.
-
----
-
-## Project Structure
-
-```
-PyClimaExplorer/
-├── app.py                          # Main Streamlit application
-├── requirements.txt                # Python dependencies
-├── components/
-│   ├── sidebar.py                  # Dataset upload, variable/time/location controls
-│   ├── heatmap_panel.py            # Global spatial heatmap with click-to-select
-│   ├── timeseries_panel.py         # Location time-series chart
-│   ├── comparison_panel.py         # Side-by-side time period comparison
-│   ├── insights_panel.py           # Summary statistics panel
-│   └── story_panel.py              # Multi-view climate insights
-├── modules/
-│   ├── data_loader.py              # NetCDF loading and coordinate detection
-│   ├── variable_adapter.py         # Unit conversion and color scale mapping
-│   ├── analysis.py                 # Statistical computations
-│   └── visualizations.py           # All Plotly chart/globe/animation generators
-└── data/                           # Local .nc files auto-loaded on startup
-```
-
----
-
-## Technologies
-
-| Technology | Purpose |
-|---|---|
-| Python | Core language |
-| Streamlit | Dashboard framework |
-| Xarray | NetCDF data handling |
-| NumPy | Numerical operations |
-| Plotly | Interactive visualizations and 3D globe |
-| SciPy | Gaussian smoothing and interpolation |
-| Pandas | Time-series formatting |
-
----
-
-## Supported Datasets
-
-**Format:** NetCDF (`.nc`) with standard coordinate dimensions (`time`, `lat`/`latitude`, `lon`/`longitude`).
-
-Commonly tested variables:
-- Temperature — `air`, `sst`, `t2m`
-- Sea Level Pressure — `slp`, `msl`, `prmsl`
-- Wind Speed — `uwnd`, `vwnd`, `u10`, `v10`
-- Precipitation — `precip`, `pr`, `tp`
-
-**Public test datasets:**
-- [NOAA/NCEP Reanalysis](https://psl.noaa.gov/data/gridded/data.ncep.reanalysis.html)
-- [NASA GISS Surface Temperature](https://data.giss.nasa.gov/gistemp/)
-- [NCEP/DOE Reanalysis 2](https://psl.noaa.gov/data/gridded/data.ncep.reanalysis2.html)
-
----
-
-## Getting Started
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
+```sh
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The dashboard opens at https://finalclimax-teygrdtzta6rrlgtm7sul7.streamlit.app/.
+Upload a `.nc` file through the sidebar or place files under `data/`. The local app normally opens at `http://localhost:8501`; the hosted URL above is a separate deployment and may sleep after inactivity.
 
----
+## Data and numerical scope
 
-## Usage
+Supported coordinate names are `lat`/`latitude`, `lon`/`longitude`, and optional `time`. Summary statistics require evenly spaced rectilinear latitude/longitude grids and a single variable with no unresolved level, ensemble or other extra dimensions. Unsupported grids return an error instead of a misleading average.
 
-1. Upload a `.nc` file via the sidebar or place files in the `data/` folder.
-2. Select a variable and time step.
-3. Switch between Map View and Globe View for spatial exploration.
-4. Click the map or enter coordinates to analyze temporal trends.
-5. Use the comparison panel to detect anomalies between time periods.
+The dataset mean uses cosine-latitude area weights and ignores missing values. Each time step receives equal weight; irregular sampling is **not** duration-weighted. The result describes the supplied geographic extent. A regional dataset is not a global climate estimate. Extrema refer to original valid observations. Step changes use chronologically sorted timestamps; duplicate timestamps are rejected.
 
----
+Temperature, pressure and precipitation conversions depend on dataset metadata. A smoothed difference map is a visualization, not statistical proof of climate change. Curvilinear grids and exact cell-boundary area integration remain out of scope.
 
-## Future Work
+## Architecture
 
-- Multi-variable overlay analysis
-- Predictive climate modeling
-- Anomaly detection and alerting
+| Location | Responsibility |
+| --- | --- |
+| `app.py` | Dashboard composition and navigation |
+| `components/` | Sidebar, maps, trends, comparison and summary views |
+| `modules/data_loader.py` | Dataset loading and coordinate selection |
+| `modules/variable_adapter.py` | Units and visual conventions |
+| `modules/analysis.py` | Dataset summary and time-step comparisons |
+| `modules/grid_math.py` | Validated latitude weights |
+| `modules/visualizations.py` | Plotly map, globe and animation construction |
+
+## Checks
+
+```sh
+python -m unittest test_grid_math.py
+python -m compileall -q app.py components modules utils
+```
+
+Five standard-library numerical helper tests passed during maintenance. Python syntax checks passed. The full Xarray/Streamlit integration and hosted dashboard were not run in this maintenance environment; helper checks are not an end-to-end scientific validation.
+
+## Maintenance changes
+
+- Replaced the unweighted dataset/spatial means with cosine-latitude weighting for regular grids.
+- Labelled regional summaries as dataset statistics rather than global averages.
+- Added regular-grid, extra-dimension and duplicate-timestamp checks.
+- Made extrema ignore missing observations and sorted time before step comparison.
+- Replaced identity-based caching of summary statistics with normal content caching.
+- Added numerical helper tests and ignore rules for generated Python files.
+
+Previously committed `__pycache__` files remain in history. Ignore rules prevent newly generated bytecode from being added; they do not remove already tracked files.
+
+## Next improvements
+
+Validate against a documented NOAA sample dataset, add cell-boundary weighting for irregular grids, improve large-file memory use, and replace temporary upload files with a managed lifecycle. Forecasting and predictive modelling are not implemented.
