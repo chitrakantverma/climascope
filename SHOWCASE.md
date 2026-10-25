@@ -36,3 +36,8 @@ Repository: https://github.com/chitrakantverma/climascope
 ## Browser evidence
 
 Screenshots below are from the local app. The public Streamlit URL uses `supremeacc/finalclimax`; it has not been updated by these commits. No screen recording has been completed.
+
+
+Plain dashboard, 25 October 2026:
+
+<img width="1280" height="720" alt="clipboard" src="https://github.com/user-attachments/assets/e3e97b7b-bf12-4235-97b2-4721a2d986e8" />
