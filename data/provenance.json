@@ -1,0 +1,19 @@
+{
+  "source_url": "https://github.com/pydata/xarray-data/blob/master/air_temperature.nc",
+  "source_sha256": "c606b89c35970a2983b914b76df4adbb409003ef34aa7cfd7f582e41f307482b",
+  "derived_sha256": "75a062bd7c4c51ded8098d4c39fdf99e80c607133ebb4f9a9f007028a119587c",
+  "source_time_steps": 2920,
+  "derived_time_steps": 24,
+  "latitude_extent": [
+    15.0,
+    75.0
+  ],
+  "longitude_extent_native": [
+    200.0,
+    330.0
+  ],
+  "processing": "Monthly arithmetic means derived from the NCEP tutorial subset; regional, not global.",
+  "units": "degK",
+  "attribution": "NCEP-NCAR Reanalysis 1 data provided by NOAA PSL, Boulder, Colorado, USA; tutorial subset maintained by pydata/xarray-data.",
+  "source_documentation": "https://tutorial.xarray.dev/fundamentals/01_datastructures.html"
+}
