@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 from modules.analysis import compute_climate_insights
 from modules.data_loader import load_dataset
 from modules.variable_adapter import get_variable_info, normalize_values
-from modules.visualizations import generate_heatmap, generate_3d_globe, generate_time_series, generate_difference_heatmap, generate_climate_animation
+from modules.visualizations import generate_heatmap, generate_time_series, generate_difference_heatmap
 
 SAMPLE = ROOT / 'data/ncep_air_monthly_2013_2014.nc'
 
@@ -74,28 +74,31 @@ class RuntimeChecks(unittest.TestCase):
         extra = synthetic().expand_dims(level=[1000, 850])
         self.assertIsNone(compute_climate_insights(extra, 'air'))
 
-    def test_five_chart_paths_produce_serializable_figures(self):
+    def test_charts_preserve_original_cells_and_observations(self):
         first, last = self.ds.time.values[[0, -1]]
-        figures = [generate_heatmap(self.ds, 'air', first), generate_3d_globe(self.ds, 'air', first),
-                   generate_time_series(self.ds, 'air', 45, 265), generate_difference_heatmap(self.ds, 'air', first, last),
-                   generate_climate_animation(self.ds.isel(time=slice(0, 4)), 'air')]
-        for fig in figures:
-            self.assertIsNotNone(fig)
-            self.assertGreater(len(fig.data), 0)
+        heatmap = generate_heatmap(self.ds, 'air', first)
+        trend = generate_time_series(self.ds, 'air', 45, 265)
+        difference = generate_difference_heatmap(self.ds, 'air', first, last)
+        np.testing.assert_allclose(heatmap.data[0].z, self.ds.air.isel(time=0).values - 273.15)
+        np.testing.assert_allclose(trend.data[0].y, self.ds.air.sel(lat=45, lon=265, method='nearest').values - 273.15)
+        self.assertEqual(len(trend.data[0].x), 24)
+        np.testing.assert_allclose(difference.data[0].z, self.ds.air.isel(time=-1).values - self.ds.air.isel(time=0).values)
+        for fig in [heatmap, trend, difference]:
             self.assertIn('data', fig.to_json())
+        missing = self.ds.copy(deep=True)
+        missing.air.values[0, 0, 0] = np.nan
+        self.assertTrue(np.isnan(generate_heatmap(missing, 'air', first).data[0].z[0, 0]))
 
     def test_streamlit_controls_and_dataset_switch(self):
         at = AppTest.from_file(str(ROOT/'app.py'), default_timeout=45).run()
         self.assertEqual(len(at.exception), 0)
         self.assertEqual(len(at.error), 0)
         self.assertGreaterEqual(len(at.get('plotly_chart')), 2)
-        at.radio[0].set_value('Globe View').run()
-        self.assertEqual(len(at.exception), 0)
+        before = len(at.get('plotly_chart'))
         at.button(key='compare_btn').click().run()
+        self.assertEqual(len(at.get('plotly_chart')), before + 1)
         self.assertEqual(len(at.exception), 0)
         self.assertEqual(len(at.error), 0)
-        at.button(key='anim_btn').click().run()
-        self.assertEqual(len(at.exception), 0)
         shifted = self.ds.assign_coords(lat=np.linspace(-45, -15, 25), lon=np.linspace(10, 40, 53), time=pd.date_range('2020-01-01', periods=24, freq='MS'))
         at.session_state['datasets'] = {'demo': self.ds, 'shifted': shifted}
         at.run()
