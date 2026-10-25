@@ -9,7 +9,6 @@ def load_dataset(file_path):
     Cached to prevent reloading on every Streamlit interaction.
     """
     try:
-        # engine='netcdf4' makes sure it can read correctly, chunks help with performance on large files if dask is available
         with xr.open_dataset(file_path) as ds:
             return ds.load()
     except FileNotFoundError:
