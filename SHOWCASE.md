@@ -46,3 +46,13 @@ Repository: https://github.com/chitrakantverma/climascope
 ## Evidence
 
 Browser captures and the demo walkthrough are recorded below after UI verification.
+
+
+### Local browser capture — 25 October 2026
+
+The bundled real dataset loads successfully. Map view and the regional scope label are visible below.
+
+<img width="1280" height="720" alt="clipboard" src="https://github.com/user-attachments/assets/79219b02-9013-49d7-ace0-d21adbae65a7" />
+
+
+Public deployment check (25 October 2026): the existing Streamlit URL still displays the older “Global Climate Data Explorer” screen with no dataset loaded. The updated cloud build is not verified. Screen recording was not completed because the recording interface failed; the screenshot above is the available browser evidence.
