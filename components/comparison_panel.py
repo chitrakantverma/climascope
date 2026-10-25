@@ -1,56 +1,22 @@
-import streamlit as st
 import pandas as pd
-from modules.visualizations import generate_heatmap, generate_difference_heatmap
+import streamlit as st
 from modules.data_loader import get_time_range
+from modules.visualizations import generate_difference_heatmap
+
 
 def render_comparison_panel(ds, selected_var):
-    """Renders the comparison feature to analyze differences between two time periods."""
-    st.markdown('<div class="section-header">⚖ Time-slice Comparison</div>', unsafe_allow_html=True)
     times = get_time_range(ds)
-    if times is None or len(times) == 0:
-        st.warning("Dataset does not have a time dimension for comparison.")
+    if len(times) < 2:
+        st.info("At least two dates are needed for comparison.")
         return
-        
-    # Time Selectors
-    try:
-        formatted_times = pd.to_datetime(times).strftime('%Y-%m-%d %H:%M:%S').tolist()
-        
-        times_list = times.tolist() if hasattr(times, 'tolist') else list(times)
-        def format_func(x):
-            return formatted_times[times_list.index(x)]
-            
-        col1, col2 = st.columns(2)
-        with col1:
-            time1 = st.selectbox("Baseline (T1)", options=times_list, index=0, format_func=format_func)
-        with col2:
-            time2 = st.selectbox("Comparison (T2)", options=times_list, index=len(times_list)-1, format_func=format_func)
-    except Exception:
-        times_list = times.tolist() if hasattr(times, 'tolist') else list(times)
-        col1, col2 = st.columns(2)
-        with col1:
-            time1 = st.selectbox("Baseline (T1)", options=times_list, index=0)
-        with col2:
-            time2 = st.selectbox("Comparison (T2)", options=times_list, index=len(times_list)-1)
-            
+    # Store indices in the controls, then select the matching dataset timestamps.
+    left, right = st.columns(2)
+    def label(index):
+        return str(pd.Timestamp(times[index]))
+    first = left.selectbox("First date", range(len(times)), format_func=label)
+    second = right.selectbox("Second date", range(len(times)), index=len(times)-1, format_func=label)
     if st.button("Compare", key="compare_btn"):
-        with st.spinner("Generating comparison…"):
-            map1, map2 = st.columns(2)
-            
-            with map1:
-                st.subheader("Baseline (T1)")
-                fig1 = generate_heatmap(ds, selected_var, time_index=time1)
-                if fig1:
-                    st.plotly_chart(fig1, width='stretch', key="compare_fig1", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
-                    
-            with map2:
-                st.subheader("Comparison (T2)")
-                fig2 = generate_heatmap(ds, selected_var, time_index=time2)
-                if fig2:
-                    st.plotly_chart(fig2, width='stretch', key="compare_fig2", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
-                    
-            st.divider()
-            
-            st.subheader("Difference (T2 − T1)")
-            fig_diff = generate_difference_heatmap(ds, selected_var, time1, time2)
-            if fig_diff:
-                st.plotly_chart(fig_diff, width='stretch', key="compare_fig_diff", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+        fig = generate_difference_heatmap(ds, selected_var, times[first], times[second])
+        if fig is not None:
+            st.plotly_chart(fig, width="stretch", config={"displaylogo": False})
+        st.caption("Second date minus first date. A two-date difference does not establish a climate trend.")

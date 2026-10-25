@@ -2,26 +2,12 @@ import streamlit as st
 import tempfile
 import pandas as pd
 import os
-import glob
 import hashlib
 from pathlib import Path
 from modules.data_loader import load_dataset, get_available_variables, get_time_range
 
 def render_sidebar():
     """Renders the sidebar controls and returns selected values."""
-    
-    # Custom CSS to reduce sidebar padding
-    st.markdown("""
-        <style>
-            [data-testid="stSidebar"] {
-                padding-top: 1rem;
-                padding-bottom: 1rem;
-            }
-            [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-                margin-bottom: 0rem;
-            }
-        </style>
-    """, unsafe_allow_html=True)
     
     # Initialize datasets dictionary in session state to handle multiple datasets
     if 'datasets' not in st.session_state:
@@ -36,13 +22,13 @@ def render_sidebar():
                 st.session_state.datasets[file_name] = ds
     
     with st.sidebar:
-        st.header("Settings")
+        st.header("Dataset")
         
         # --- DATA SECTION ---
-        st.markdown("### DATA")
+        
         
         # 1. Provide an upload mechanism
-        uploaded_file = st.file_uploader("Upload NetCDF file (.nc)", type=['nc'], label_visibility="collapsed")
+        uploaded_file = st.file_uploader("Upload NetCDF file (.nc)", type=['nc'], label_visibility="visible")
         
         # Load uploads into memory, close the dataset, then remove the temporary file.
         if uploaded_file is not None:
@@ -88,7 +74,7 @@ def render_sidebar():
             ds = st.session_state.dataset
             
             # --- LOCATION SECTION ---
-            st.markdown("### 📍 Location")
+            st.markdown("### Location")
             lat_name = 'lat' if 'lat' in ds.dims or 'lat' in ds.coords else 'latitude' if 'latitude' in ds.dims or 'latitude' in ds.coords else None
             lon_name = 'lon' if 'lon' in ds.dims or 'lon' in ds.coords else 'longitude' if 'longitude' in ds.dims or 'longitude' in ds.coords else None
             
@@ -109,7 +95,7 @@ def render_sidebar():
                     pending_lon = st.number_input("Lon", min_value=lon_min, max_value=lon_max, value=float(st.session_state.selected_lon), key="_ui_lon")
                 
                 # Button commits pending coordinates to the active location
-                if st.button("📍 Locate on Map", width='stretch'):
+                if st.button("Update location", width='stretch'):
                     st.session_state.selected_lat = pending_lat
                     st.session_state.selected_lon = pending_lon
                 
@@ -119,18 +105,18 @@ def render_sidebar():
             st.divider()
 
             # --- VARIABLE SECTION ---
-            st.markdown("### 🌡 Variable")
+            st.markdown("### Variable")
             variables = get_available_variables(ds)
             
             if not variables:
                 st.warning("No valid variables found.")
             else:
-                selected_var = st.selectbox("Select Variable", variables, label_visibility="collapsed")
+                selected_var = st.selectbox("Select Variable", variables, label_visibility="visible")
                 
                 st.divider()
                 
                 # --- TIME SECTION ---
-                st.markdown("### ⏳ Time")
+                st.markdown("### Date")
                 times = get_time_range(ds)
                 
                 if len(times) > 0:
@@ -153,7 +139,7 @@ def render_sidebar():
                         pending_time = times[selected_time_idx]
                     
                     # Button commits the slider selection to the active time
-                    if st.button("🔄 Update Map", width='stretch', type="primary"):
+                    if st.button("Update date", width='stretch', type="primary"):
                         st.session_state.active_time = pending_time
                     
                     selected_time = st.session_state.active_time
