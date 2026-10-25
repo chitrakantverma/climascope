@@ -1,20 +1,22 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import xarray as xr
+from modules.grid_math import latitude_weights
 
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
+@st.cache_data
 def compute_climate_insights(dataset, variable):
     """
     Compute summary statistics for a climate variable across the entire dataset.
     
     Returns a dictionary with:
-      - global_avg: The global average value across all space and time.
+      - global_avg: Area-weighted dataset mean, with equal weight per time step.
       - max_value: The maximum value.
       - max_location: (lat, lon, time) of the maximum value.
       - min_value: The minimum value.
       - min_location: (lat, lon, time) of the minimum value.
-      - largest_change: The largest absolute change between consecutive time steps.
+      - largest_change: Signed change with the largest magnitude between consecutive time steps.
       - largest_change_times: (time_from, time_to) of the largest change.
     """
     if dataset is None or variable not in dataset:
@@ -29,13 +31,32 @@ def compute_climate_insights(dataset, variable):
         return None
         
     try:
+        extra_dims = set(data.dims) - {lat_name, lon_name, 'time'}
+        if extra_dims:
+            raise ValueError("Select a single level/member before computing statistics.")
+        if data[lat_name].ndim != 1 or data[lon_name].ndim != 1:
+            raise ValueError("Statistics require a regular rectilinear latitude/longitude grid.")
+        # Validate longitude spacing; cosine latitude weights assume equal-width cells.
+        longitudes = np.asarray(data[lon_name].values, dtype=float)
+        if not np.isfinite(longitudes).all() or len(np.unique(longitudes)) != len(longitudes):
+            raise ValueError("Longitude coordinates must be finite and unique.")
+        if len(longitudes) > 2 and not np.allclose(np.diff(longitudes), np.diff(longitudes)[0], rtol=1e-4, atol=1e-6):
+            raise ValueError("Statistics require evenly spaced longitude coordinates.")
+        if not bool(data.notnull().any()):
+            raise ValueError("The selected variable contains no valid observations.")
+        if 'time' in data.dims:
+            data = data.sortby('time')
+            if len(np.unique(data.time.values)) != len(data.time):
+                raise ValueError("Duplicate timestamps must be resolved before comparing time steps.")
+        weights = xr.DataArray(latitude_weights(data[lat_name].values), coords={lat_name: data[lat_name]}, dims=[lat_name])
+        spatial_mean = data.weighted(weights).mean(dim=[lat_name, lon_name], skipna=True)
         insights = {}
         
         # 1. Global average value
-        insights['global_avg'] = float(data.mean().values)
+        insights['global_avg'] = float(spatial_mean.mean(skipna=True).values)
         
         # 2. Maximum value and location
-        max_idx = data.argmax(dim=...)
+        max_idx = data.fillna(-np.inf).argmax(dim=...)
         insights['max_value'] = float(data.max().values)
         max_lat = float(dataset[lat_name].values[max_idx[lat_name].values])
         max_lon = float(dataset[lon_name].values[max_idx[lon_name].values])
@@ -49,7 +70,7 @@ def compute_climate_insights(dataset, variable):
             insights['max_location'] = f"{max_lat:.2f}°, {max_lon:.2f}°"
         
         # 3. Minimum value and location
-        min_idx = data.argmin(dim=...)
+        min_idx = data.fillna(np.inf).argmin(dim=...)
         insights['min_value'] = float(data.min().values)
         min_lat = float(dataset[lat_name].values[min_idx[lat_name].values])
         min_lon = float(dataset[lon_name].values[min_idx[lon_name].values])
@@ -65,11 +86,13 @@ def compute_climate_insights(dataset, variable):
         # 4. Largest change between consecutive time steps
         if 'time' in data.dims and len(data.time) > 1:
             # Compute the mean across space for each time step, then diff
-            spatial_mean = data.mean(dim=[lat_name, lon_name])
+            # Use the same area weighting as the dataset mean.
             diffs = spatial_mean.diff(dim='time')
             abs_diffs = np.abs(diffs)
             
-            max_change_idx = int(abs_diffs.argmax(dim='time').values)
+            if not bool(abs_diffs.notnull().any()):
+                raise ValueError('No valid consecutive time steps are available for comparison.')
+            max_change_idx = int(abs_diffs.fillna(-np.inf).argmax(dim='time').values)
             max_change_time = diffs.time.values[max_change_idx]
             insights['largest_change'] = float(diffs.sel(time=max_change_time, method='nearest').values)
             
