@@ -10,8 +10,8 @@ def load_dataset(file_path):
     """
     try:
         # engine='netcdf4' makes sure it can read correctly, chunks help with performance on large files if dask is available
-        ds = xr.open_dataset(file_path)
-        return ds
+        with xr.open_dataset(file_path) as ds:
+            return ds.load()
     except FileNotFoundError:
         st.error(f"Error: Dataset not found at {file_path}")
         return None
@@ -51,7 +51,6 @@ def get_time_range(dataset):
         st.error(f"Error extracting time range: {e}")
         return []
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
 def get_spatial_slice(dataset, variable, time_index=None):
     """
     Extract a 2D spatial slice for a given variable and time index.
@@ -89,7 +88,6 @@ def get_spatial_slice(dataset, variable, time_index=None):
             
     return data
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
 def get_location_timeseries(dataset, variable, lat, lon):
     """
     Extract a 1D time series for a specific location.

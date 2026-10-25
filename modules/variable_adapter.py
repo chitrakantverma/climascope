@@ -12,6 +12,8 @@ import streamlit as st
 
 # ── Variable type classification ──────────────────────────────────────────────
 
+_KELVIN_UNITS = {'k', 'kelvin', 'degk', 'deg_k', 'degree_kelvin', 'degrees_kelvin', 'degrees_k'}
+
 _TEMPERATURE_NAMES = {'air', 'tmp', 'temp', 'temperature', 'tas', 'tas2m', 't2m', 'sst', 'skt'}
 _WIND_NAMES = {'uwnd', 'vwnd', 'u', 'v', 'u10', 'v10', 'uwind', 'vwind', 'wspd'}
 _PRECIP_NAMES = {'precip', 'precipitation', 'pr', 'prate', 'rain', 'rainfall', 'tp', 'prcp'}
@@ -25,7 +27,7 @@ def _classify_variable(variable_name, units):
     # Check by units first (most reliable)
     if units:
         units_lower = units.lower().strip()
-        if units_lower in ('k', 'kelvin', 'degc', 'deg_c', 'celsius', '°c', 'degrees_celsius', 'degrees_c'):
+        if units_lower in _KELVIN_UNITS or units_lower in ('degc', 'deg_c', 'celsius', '°c', 'degrees_celsius', 'degrees_c'):
             return 'temperature'
         if units_lower in ('pa', 'hpa', 'mb', 'mbar', 'pascal', 'hectopascal'):
             return 'pressure'
@@ -49,7 +51,6 @@ def _classify_variable(variable_name, units):
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
 def get_variable_info(dataset, variable):
     """
     Inspect a dataset variable and return adaptation metadata.
@@ -84,13 +85,13 @@ def get_variable_info(dataset, variable):
     if category == 'temperature':
         info['color_scale'] = 'Turbo'
         info['center_zero'] = False
-        if raw_units and raw_units.lower().strip() in ('k', 'kelvin'):
+        if raw_units and raw_units.lower().strip() in _KELVIN_UNITS:
             info['needs_kelvin_offset'] = True
             info['display_units'] = '°C'
         elif raw_units:
             info['display_units'] = raw_units
         else:
-            info['display_units'] = '°C'
+            info['display_units'] = 'units not supplied'
 
     # ── Pressure ───────────────────────────────────────────────
     elif category == 'pressure':
@@ -102,7 +103,7 @@ def get_variable_info(dataset, variable):
         elif raw_units:
             info['display_units'] = raw_units
         else:
-            info['display_units'] = 'hPa'
+            info['display_units'] = 'units not supplied'
 
     # ── Wind ───────────────────────────────────────────────────
     elif category == 'wind':
@@ -144,7 +145,8 @@ def compute_color_range(values, var_info):
 
     Returns (range_color, midpoint) where range_color is [vmin, vmax].
     """
-    clean = values[~np.isnan(values)] if hasattr(values, '__len__') else values
+    clean = np.asarray(values, dtype=float).ravel()
+    clean = clean[np.isfinite(clean)]
     if len(clean) == 0:
         return [-1, 1], 0
 

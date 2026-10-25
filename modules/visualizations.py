@@ -38,7 +38,6 @@ def _prepare_spatial_data(dataset, variable, time_index=None):
         st.error(f"Error extracting spatial data: {e}")
         return None, None, None
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
 def _get_smoothed_spatial_df(dataset, variable, time_index):
     """Cached helper to slice, interpolate, smooth, and normalize spatial data."""
     data = get_spatial_slice(dataset, variable, time_index)
@@ -91,7 +90,6 @@ def _get_smoothed_spatial_df(dataset, variable, time_index):
     
     return df
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
 def _build_base_heatmap(dataset, variable, time_index=None):
     """
     Build the expensive base heatmap figure (scatter_geo) and cache it.
@@ -125,7 +123,7 @@ def _build_base_heatmap(dataset, variable, time_index=None):
         )
 
         fig.update_layout(
-            title=f"Global Spatial Distribution: {variable}{units_label}",
+            title=f"Spatial Distribution: {variable}{units_label}",
             geo=dict(
                 showcoastlines=True,
                 coastlinecolor='white',
@@ -357,7 +355,6 @@ def generate_3d_globe(dataset, variable, time_index=None):
         st.error(f"Error generating 3D Globe: {e}")
         return None
 
-@st.cache_data(hash_funcs={"xarray.core.dataset.Dataset": id})
 def generate_time_series(dataset, variable, lat, lon):
     """
     Generate a line graph showing how a variable changes over time at a given location.

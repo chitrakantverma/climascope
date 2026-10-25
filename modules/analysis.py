@@ -5,7 +5,6 @@ import xarray as xr
 from modules.grid_math import latitude_weights
 
 
-@st.cache_data
 def compute_climate_insights(dataset, variable):
     """
     Compute summary statistics for a climate variable across the entire dataset.
@@ -22,7 +21,7 @@ def compute_climate_insights(dataset, variable):
     if dataset is None or variable not in dataset:
         return None
         
-    data = dataset[variable]
+    data = dataset[variable].where(np.isfinite(dataset[variable]))
     
     lat_name = 'lat' if 'lat' in dataset.coords else 'latitude' if 'latitude' in dataset.coords else None
     lon_name = 'lon' if 'lon' in dataset.coords else 'longitude' if 'longitude' in dataset.coords else None
@@ -58,13 +57,13 @@ def compute_climate_insights(dataset, variable):
         # 2. Maximum value and location
         max_idx = data.fillna(-np.inf).argmax(dim=...)
         insights['max_value'] = float(data.max().values)
-        max_lat = float(dataset[lat_name].values[max_idx[lat_name].values])
-        max_lon = float(dataset[lon_name].values[max_idx[lon_name].values])
+        max_lat = float(data[lat_name].values[max_idx[lat_name].values])
+        max_lon = float(data[lon_name].values[max_idx[lon_name].values])
         if 'time' in max_idx:
             try:
-                max_time = pd.to_datetime(dataset['time'].values[max_idx['time'].values]).strftime('%Y-%m-%d')
+                max_time = pd.to_datetime(data['time'].values[max_idx['time'].values]).strftime('%Y-%m-%d %H:%M')
             except:
-                max_time = str(dataset['time'].values[max_idx['time'].values])
+                max_time = str(data['time'].values[max_idx['time'].values])
             insights['max_location'] = f"{max_lat:.2f}°, {max_lon:.2f}° on {max_time}"
         else:
             insights['max_location'] = f"{max_lat:.2f}°, {max_lon:.2f}°"
@@ -72,13 +71,13 @@ def compute_climate_insights(dataset, variable):
         # 3. Minimum value and location
         min_idx = data.fillna(np.inf).argmin(dim=...)
         insights['min_value'] = float(data.min().values)
-        min_lat = float(dataset[lat_name].values[min_idx[lat_name].values])
-        min_lon = float(dataset[lon_name].values[min_idx[lon_name].values])
+        min_lat = float(data[lat_name].values[min_idx[lat_name].values])
+        min_lon = float(data[lon_name].values[min_idx[lon_name].values])
         if 'time' in min_idx:
             try:
-                min_time = pd.to_datetime(dataset['time'].values[min_idx['time'].values]).strftime('%Y-%m-%d')
+                min_time = pd.to_datetime(data['time'].values[min_idx['time'].values]).strftime('%Y-%m-%d %H:%M')
             except:
-                min_time = str(dataset['time'].values[min_idx['time'].values])
+                min_time = str(data['time'].values[min_idx['time'].values])
             insights['min_location'] = f"{min_lat:.2f}°, {min_lon:.2f}° on {min_time}"
         else:
             insights['min_location'] = f"{min_lat:.2f}°, {min_lon:.2f}°"
@@ -97,8 +96,8 @@ def compute_climate_insights(dataset, variable):
             insights['largest_change'] = float(diffs.sel(time=max_change_time, method='nearest').values)
             
             try:
-                t_from = pd.to_datetime(data.time.values[max_change_idx]).strftime('%Y-%m-%d')
-                t_to = pd.to_datetime(data.time.values[max_change_idx + 1]).strftime('%Y-%m-%d')
+                t_from = pd.to_datetime(data.time.values[max_change_idx]).strftime('%Y-%m-%d %H:%M')
+                t_to = pd.to_datetime(data.time.values[max_change_idx + 1]).strftime('%Y-%m-%d %H:%M')
             except:
                 t_from = str(data.time.values[max_change_idx])
                 t_to = str(data.time.values[max_change_idx + 1])
