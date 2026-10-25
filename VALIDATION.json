@@ -1,0 +1,46 @@
+{
+  "validated_on": "2026-10-25",
+  "python": "3.11.15",
+  "versions": {
+    "streamlit": "1.60.0",
+    "xarray": "2025.1.2",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "scipy": "1.17.1",
+    "plotly": "6.0.1"
+  },
+  "sample_statistics_native_kelvin": {
+    "global_avg": 285.4705740495906,
+    "max_value": 304.54541015625,
+    "max_location": "30.00\u00b0, 247.50\u00b0 on 2013-08-01 00:00",
+    "min_value": 231.72116088867188,
+    "min_location": "75.00\u00b0, 245.00\u00b0 on 2013-02-01 00:00",
+    "largest_change": -4.829122117528698,
+    "largest_change_times": "2014-10-01 00:00 \u2192 2014-11-01 00:00"
+  },
+  "mean_celsius": 12.320574049590618,
+  "tests": {
+    "grid_helper_methods": 5,
+    "runtime_methods": 8
+  },
+  "source_provenance": "data/provenance.json",
+  "runtime_checks": [
+    "real sample NetCDF load",
+    "NumPy-reference weighted mean",
+    "missing values",
+    "unsorted time extrema",
+    "subdaily timestamps",
+    "Kelvin aliases",
+    "five chart generation paths",
+    "Streamlit default view",
+    "globe control",
+    "comparison control",
+    "animation control",
+    "dataset switch bounds/time reset"
+  ],
+  "limits": [
+    "sample validation does not cover every NetCDF convention",
+    "NetCDF4 backend optional and not tested here",
+    "public cloud deployment verification recorded separately"
+  ]
+}

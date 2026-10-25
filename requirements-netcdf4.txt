@@ -1,0 +1,3 @@
+# Optional support for compressed/HDF5 NetCDF files.
+-r requirements.txt
+netCDF4>=1.7,<2

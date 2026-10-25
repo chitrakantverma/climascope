@@ -19,6 +19,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* ---- Global overrides ---- */
+    .stMainBlockContainer { padding-top: 2rem; }
     [data-testid="stAppViewContainer"] {
         background-color: #0e1117;
     }
@@ -96,7 +97,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero-title">
     <h1>ClimaScope</h1>
-    <p class="subtitle">Global Climate Data Explorer</p>
+    <p class="subtitle">Climate Data Explorer</p>
 </div>
 """, unsafe_allow_html=True)
 st.markdown("---")
@@ -111,11 +112,12 @@ selected_var, selected_time, lat, lon = render_sidebar()
 # ── Main Content ──
 if st.session_state.dataset is not None and selected_var is not None:
     ds = st.session_state.dataset
+    if "pydata/xarray-data" in str(ds.attrs.get("source", "")):
+        st.caption("Demo: NCEP tutorial subset · monthly means · 2013–2014 · 15–75°N, 200–330°E. Regional data; not a global climate estimate.")
 
-    # ── Global Climate Map ──
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-header">🌍 Global Climate Map</div>', unsafe_allow_html=True)
+    # ── Spatial Climate Map ──
+    with st.container(border=True):
+        st.markdown('<div class="section-header">🌍 Spatial Climate Map</div>', unsafe_allow_html=True)
         st.caption("Spatial distribution of the selected climate variable.")
         viz_mode = st.radio(
             "Visualization Mode",
@@ -129,44 +131,33 @@ if st.session_state.dataset is not None and selected_var is not None:
             with st.spinner("Rendering globe…"):
                 fig_globe = generate_3d_globe(ds, selected_var, time_index=selected_time)
                 if fig_globe:
-                    st.plotly_chart(fig_globe, use_container_width=True, config={"displaylogo": False, "scrollZoom": True, "responsive": True})
-        st.markdown('</div>', unsafe_allow_html=True)
+                    st.plotly_chart(fig_globe, width='stretch', config={"displaylogo": False, "scrollZoom": True, "responsive": True})
 
     # ── Summary Statistics ──
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    with st.container(border=True):
         render_insights_panel(ds, selected_var)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Location Time Trend ──
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    with st.container(border=True):
         render_timeseries_panel(ds, selected_var, lat, lon)
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Climate Change Comparison ──
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    # ── Time-slice Comparison ──
+    with st.container(border=True):
         render_comparison_panel(ds, selected_var)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Temporal Animation ──
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    with st.container(border=True):
         st.markdown('<div class="section-header">▶ Temporal Animation</div>', unsafe_allow_html=True)
         st.caption("Animated playback of the dataset over time.")
         if st.button("Generate Animation", key="anim_btn"):
             with st.spinner("Generating frames…"):
                 fig_anim = generate_climate_animation(ds, selected_var)
                 if fig_anim:
-                    st.plotly_chart(fig_anim, use_container_width=True, config={"displaylogo": False, "scrollZoom": True, "responsive": True})
-        st.markdown('</div>', unsafe_allow_html=True)
+                    st.plotly_chart(fig_anim, width='stretch', config={"displaylogo": False, "scrollZoom": True, "responsive": True})
 
     # ── Climate Insights ──
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    with st.container(border=True):
         render_story_panel(ds, selected_var, lat, lon)
-        st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     # Empty state
