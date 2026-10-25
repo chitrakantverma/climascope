@@ -3,14 +3,14 @@ from modules.visualizations import generate_heatmap
 
 def render_heatmap_panel(ds, selected_var, selected_time, lat=None, lon=None):
     """Renders the central heatmap visualization."""
-    st.markdown('<div class="section-header">Global Spatial Distribution</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Spatial Distribution</div>', unsafe_allow_html=True)
     with st.spinner("Generating 2D heatmap..."):
         fig_map = generate_heatmap(ds, selected_var, time_index=selected_time, selected_lat=lat, selected_lon=lon)
         if fig_map:
             # Render chart and capture click events natively
             event = st.plotly_chart(
                 fig_map, 
-                use_container_width=True, 
+                width='stretch', 
                 config={"displaylogo": False, "scrollZoom": True, "responsive": True},
                 on_select="rerun", 
                 selection_mode="points"

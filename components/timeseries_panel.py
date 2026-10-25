@@ -16,7 +16,7 @@ def render_timeseries_panel(ds, selected_var, lat, lon):
     if current_lat is not None and current_lon is not None:
         fig_ts = generate_time_series(ds, selected_var, current_lat, current_lon)
         if fig_ts:
-            st.plotly_chart(fig_ts, use_container_width=True, config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+            st.plotly_chart(fig_ts, width='stretch', config={"displaylogo": False, "scrollZoom": True, "responsive": True})
     else:
         st.warning("Missing latitude/longitude coordinates.")
 

@@ -3,6 +3,8 @@ import tempfile
 import pandas as pd
 import os
 import glob
+import hashlib
+from pathlib import Path
 from modules.data_loader import load_dataset, get_available_variables, get_time_range
 
 def render_sidebar():
@@ -26,7 +28,7 @@ def render_sidebar():
         st.session_state.datasets = {}
         
         # Scan local data folder for existing datasets
-        local_files = glob.glob(os.path.join("data", "*.nc"))
+        local_files = sorted((Path(__file__).resolve().parents[1] / "data").glob("*.nc"))
         for file_path in local_files:
             file_name = os.path.basename(file_path)
             ds = load_dataset(file_path)
@@ -42,27 +44,35 @@ def render_sidebar():
         # 1. Provide an upload mechanism
         uploaded_file = st.file_uploader("Upload NetCDF file (.nc)", type=['nc'], label_visibility="collapsed")
         
-        # Handle file upload and add it to our datasets collection
+        # Load uploads into memory, close the dataset, then remove the temporary file.
         if uploaded_file is not None:
-            if uploaded_file.name not in st.session_state.datasets:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".nc") as tmp:
-                    tmp.write(uploaded_file.getvalue())
-                    file_path = tmp.name
-                    
+            content = uploaded_file.getvalue()
+            fingerprint = hashlib.sha256(content).hexdigest()
+            upload_key = f"{uploaded_file.name} · {fingerprint[:10]}"
+            if upload_key not in st.session_state.datasets:
+                file_path = None
                 try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".nc") as tmp:
+                        tmp.write(content)
+                        file_path = tmp.name
                     ds = load_dataset(file_path)
                     if ds is not None:
-                        st.session_state.datasets[uploaded_file.name] = ds
+                        st.session_state.datasets[upload_key] = ds
                         st.success(f"Loaded {uploaded_file.name}")
                 finally:
-                    pass
-                    
+                    if file_path and os.path.exists(file_path):
+                        os.unlink(file_path)
+
         # 2. Allow switching between loaded datasets (local and uploaded)
         available_datasets = list(st.session_state.datasets.keys())
         
         if available_datasets:
             selected_dataset_name = st.selectbox("Select Dataset", available_datasets, index=0)
             st.session_state.dataset = st.session_state.datasets[selected_dataset_name]
+            if st.session_state.get('_active_dataset_name') != selected_dataset_name:
+                for key in ['selected_lat', 'selected_lon', 'active_time', '_ui_lat', '_ui_lon', '_ui_time_slider']:
+                    st.session_state.pop(key, None)
+                st.session_state._active_dataset_name = selected_dataset_name
         else:
             st.info("Upload a dataset or place .nc files in the 'data/' folder.")
             st.session_state.dataset = None
@@ -99,7 +109,7 @@ def render_sidebar():
                     pending_lon = st.number_input("Lon", min_value=lon_min, max_value=lon_max, value=float(st.session_state.selected_lon), key="_ui_lon")
                 
                 # Button commits pending coordinates to the active location
-                if st.button("📍 Locate on Map", use_container_width=True):
+                if st.button("📍 Locate on Map", width='stretch'):
                     st.session_state.selected_lat = pending_lat
                     st.session_state.selected_lon = pending_lon
                 
@@ -143,7 +153,7 @@ def render_sidebar():
                         pending_time = times[selected_time_idx]
                     
                     # Button commits the slider selection to the active time
-                    if st.button("🔄 Update Map", use_container_width=True, type="primary"):
+                    if st.button("🔄 Update Map", width='stretch', type="primary"):
                         st.session_state.active_time = pending_time
                     
                     selected_time = st.session_state.active_time

@@ -5,7 +5,7 @@ from modules.data_loader import get_time_range
 
 def render_story_panel(ds, selected_var, lat, lon):
     """
-    Renders three analysis blocks: Global Snapshot, Climate Anomaly, and Location Trend.
+    Renders three analysis blocks: Dataset Snapshot, Climate Anomaly, and Location Trend.
     """
     st.markdown('<div class="section-header">🔍 Climate Insights</div>', unsafe_allow_html=True)
     st.caption("Spatial, temporal, and anomaly analysis of the loaded dataset.")
@@ -13,8 +13,8 @@ def render_story_panel(ds, selected_var, lat, lon):
     times = get_time_range(ds)
     has_time = times is not None and len(times) > 0
     
-    # ── Global Snapshot ──
-    with st.expander("Global Snapshot", expanded=True):
+    # ── Dataset Snapshot ──
+    with st.expander("Dataset Snapshot", expanded=True):
         if has_time:
             first_time = times[0]
             try:
@@ -27,10 +27,10 @@ def render_story_panel(ds, selected_var, lat, lon):
             fig = generate_heatmap(ds, selected_var, selected_lat=lat, selected_lon=lon)
             
         if fig:
-            st.plotly_chart(fig, use_container_width=True, key="story_fig1", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+            st.plotly_chart(fig, width='stretch', key="story_fig1", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
     
-    # ── Climate Change Comparison ──
-    with st.expander("Climate Change Comparison", expanded=False):
+    # ── Time-slice Comparison ──
+    with st.expander("Time-slice Comparison", expanded=False):
         if not has_time or len(times) < 2:
             st.warning("At least two time steps are required for anomaly analysis.")
         else:
@@ -48,7 +48,7 @@ def render_story_panel(ds, selected_var, lat, lon):
             
             fig_diff = generate_difference_heatmap(ds, selected_var, first_time, last_time)
             if fig_diff:
-                st.plotly_chart(fig_diff, use_container_width=True, key="story_fig2", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+                st.plotly_chart(fig_diff, width='stretch', key="story_fig2", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
     
     # ── Time Trend ──
     with st.expander("Time Trend", expanded=False):
@@ -59,6 +59,6 @@ def render_story_panel(ds, selected_var, lat, lon):
                 st.caption(f"Temporal trend at Lat {lat:.2f}, Lon {lon:.2f}. Adjust coordinates in the sidebar.")
                 fig_ts = generate_time_series(ds, selected_var, lat, lon)
                 if fig_ts:
-                    st.plotly_chart(fig_ts, use_container_width=True, key="story_fig3", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+                    st.plotly_chart(fig_ts, width='stretch', key="story_fig3", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
             else:
                 st.warning("Set latitude and longitude in the sidebar to view the time trend.")

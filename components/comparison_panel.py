@@ -5,7 +5,7 @@ from modules.data_loader import get_time_range
 
 def render_comparison_panel(ds, selected_var):
     """Renders the comparison feature to analyze differences between two time periods."""
-    st.markdown('<div class="section-header">⚖ Climate Change Comparison</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">⚖ Time-slice Comparison</div>', unsafe_allow_html=True)
     times = get_time_range(ds)
     if times is None or len(times) == 0:
         st.warning("Dataset does not have a time dimension for comparison.")
@@ -40,17 +40,17 @@ def render_comparison_panel(ds, selected_var):
                 st.subheader("Baseline (T1)")
                 fig1 = generate_heatmap(ds, selected_var, time_index=time1)
                 if fig1:
-                    st.plotly_chart(fig1, use_container_width=True, key="compare_fig1", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+                    st.plotly_chart(fig1, width='stretch', key="compare_fig1", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
                     
             with map2:
                 st.subheader("Comparison (T2)")
                 fig2 = generate_heatmap(ds, selected_var, time_index=time2)
                 if fig2:
-                    st.plotly_chart(fig2, use_container_width=True, key="compare_fig2", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+                    st.plotly_chart(fig2, width='stretch', key="compare_fig2", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
                     
             st.divider()
             
             st.subheader("Difference (T2 − T1)")
             fig_diff = generate_difference_heatmap(ds, selected_var, time1, time2)
             if fig_diff:
-                st.plotly_chart(fig_diff, use_container_width=True, key="compare_fig_diff", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
+                st.plotly_chart(fig_diff, width='stretch', key="compare_fig_diff", config={"displaylogo": False, "scrollZoom": True, "responsive": True})
